@@ -1,0 +1,1335 @@
+import React, { useState, useMemo } from "react";
+import {
+  Map, Users, ListChecks, CircleUserRound, Search, SlidersHorizontal,
+  ChevronRight, ChevronLeft, X, Plus, Minus, Bookmark, Star, MapPin,
+  Phone, BookOpen, Share2, Flag, Navigation, Settings, Pencil, Check,
+  BadgeCheck, Camera, Import, LogOut, LifeBuoy, Instagram, Music2
+} from "lucide-react";
+
+/* ------------------------------------------------------------------ */
+/* Material 3 token system                                             */
+/* ------------------------------------------------------------------ */
+const T = {
+  surface: "#FAF9F4",
+  surfaceContainer: "#F1EFE6",
+  surfaceHigh: "#EBE8DD",
+  primary: "#2E6B4F",
+  onPrimary: "#FFFFFF",
+  primaryContainer: "#C9EAD3",
+  onPrimaryContainer: "#0A2818",
+  secondaryContainer: "#E4EAD5",
+  onSecondaryContainer: "#1A2E1C",
+  tertiary: "#8A5100",
+  tertiaryContainer: "#FFDCB8",
+  outline: "#74796F",
+  outlineVariant: "#C4C8BB",
+  onSurface: "#1A1C18",
+  onSurfaceVariant: "#44483F",
+  error: "#BA1A1A",
+};
+
+const ratingColor = (r) =>
+  r >= 8.5 ? "#1B7A3D" : r >= 7 ? "#B26B00" : "#C4441C";
+
+/* ------------------------------------------------------------------ */
+/* Localization (EN / AR)                                              */
+/* ------------------------------------------------------------------ */
+const I18N = {
+  en: {
+    navMap: "Map", navPeople: "People", navLists: "Lists", navProfile: "Profile",
+    tabExplore: "Explore", tabFriends: "Friends", tabFollowing: "Following",
+    tabAll: "All", tabMine: "My lists",
+    peopleH: "People", listsH: "Lists",
+    searchRest: "Search restaurants or dishes", searchPeople: "Search people",
+    searchCuisine: "Search a cuisine, e.g. Italian",
+    hitlist: "Hitlist", anyone: "Anyone \u25be", nearMe: "Near me \u25be",
+    filters: "Filters", clearAll: "Clear all filters", location: "LOCATION",
+    cuisineL: "CUISINE", otherFilters: "OTHER FILTERS",
+    friendsRec: "Restaurants my friends recommend", apply: "Apply filters",
+    closed: "CLOSED", open: "OPEN", opens: "Opens",
+    save: "Save", savedBtn: "Saved",
+    leaveReview: "Leave a review", updateReview: "Update your review",
+    featuredVideo: "FEATURED VIDEO", tapWatch: "Tap to watch the review",
+    noVideos: "No videos yet for this spot.",
+    addToList: "Add to list", directions: "Directions", call: "Call",
+    menuL: "Menu", share: "Share", report: "Report issue",
+    reviewQ: (n) => `How was the food at ${n}?`,
+    showNumber: "SHOW NUMBER RATING", addPhotos: "ADD PHOTOS",
+    whatOrder: "WHAT DID YOU ORDER", searchDish: "Search or add a dish",
+    leaveDesc: "LEAVE A DESCRIPTION",
+    descPh: "What stood out? What should friends order?",
+    submit: "Submit review",
+    fromContacts: "FROM YOUR CONTACTS", invite: "Invite", invited: "Invited \u2713",
+    noListsTitle: "You currently have no lists.",
+    noListsBody: "Lists keep your top restaurants organized \u2014 break them out by cuisine, city, or whatever you wish. Tap + to start one.",
+    noListsBody2: "Organize your top restaurants by cuisine, city, or whatever you wish.",
+    byLine: (by, n) => `By ${by} \u00b7 ${n} restaurant${n === 1 ? "" : "s"}`,
+    far: ">100 mi",
+    noRestInList: 'No restaurants yet. Open any restaurant and choose "Add to list".',
+    cancel: "Cancel", listName: "List name", listDesc: "Add a description (optional)",
+    createList: "Create list", addToAList: "Add to a list",
+    noListsYet: "You don't have any lists yet \u2014 create one to save this spot.",
+    newList: "New list",
+    trustedBy: "TRUSTED BY", visitedL: "VISITED", savedL: "SAVED",
+    top8: "Islam's Top 8", myListsH: "My lists",
+    profileTitle: "Profile", personalInfo: "PERSONAL INFORMATION",
+    connectSocials: "CONNECT SOCIALS", publicProfile: "Public profile",
+    publicSub: "Allow other users to find and follow you",
+    publicGate: (n) => `Add a profile picture and leave ${n} more review${n === 1 ? "" : "s"} to go public.`,
+    saveChanges: "Save changes", importMaps: "Import Google Maps",
+    support: "Contact support", logout: "Log out",
+    toastReview: (r) => `Review saved \u00b7 ${r}`,
+    toastSaved: "Saved to your hitlist", toastUnsaved: "Removed from saved",
+    toastList: (n) => `List "${n}" created`, toastAdded: "Added to list",
+  },
+  ar: {
+    navMap: "\u0627\u0644\u062e\u0631\u064a\u0637\u0629", navPeople: "\u0627\u0644\u0646\u0627\u0633",
+    navLists: "\u0627\u0644\u0642\u0648\u0627\u0626\u0645", navProfile: "\u062d\u0633\u0627\u0628\u064a",
+    tabExplore: "\u0627\u0633\u062a\u0643\u0634\u0641", tabFriends: "\u0627\u0644\u0623\u0635\u062f\u0642\u0627\u0621",
+    tabFollowing: "\u0623\u062a\u0627\u0628\u0639\u0647\u0645",
+    tabAll: "\u0627\u0644\u0643\u0644", tabMine: "\u0642\u0648\u0627\u0626\u0645\u064a",
+    peopleH: "\u0627\u0644\u0646\u0627\u0633", listsH: "\u0627\u0644\u0642\u0648\u0627\u0626\u0645",
+    searchRest: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0645\u0637\u0639\u0645 \u0623\u0648 \u0637\u0628\u0642",
+    searchPeople: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0623\u0634\u062e\u0627\u0635",
+    searchCuisine: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0645\u0637\u0628\u062e\u060c \u0645\u062b\u0644 \u0625\u064a\u0637\u0627\u0644\u064a",
+    hitlist: "\u0627\u0644\u0645\u0641\u0636\u0644\u0629", anyone: "\u0627\u0644\u062c\u0645\u064a\u0639 \u25be",
+    nearMe: "\u0642\u0631\u064a\u0628 \u0645\u0646\u064a \u25be",
+    filters: "\u0627\u0644\u0641\u0644\u0627\u062a\u0631", clearAll: "\u0645\u0633\u062d \u0627\u0644\u0643\u0644",
+    location: "\u0627\u0644\u0645\u0648\u0642\u0639", cuisineL: "\u0627\u0644\u0645\u0637\u0628\u062e",
+    otherFilters: "\u0641\u0644\u0627\u062a\u0631 \u0623\u062e\u0631\u0649",
+    friendsRec: "\u0645\u0637\u0627\u0639\u0645 \u064a\u0648\u0635\u064a \u0628\u0647\u0627 \u0623\u0635\u062f\u0642\u0627\u0626\u064a",
+    apply: "\u062a\u0637\u0628\u064a\u0642 \u0627\u0644\u0641\u0644\u0627\u062a\u0631",
+    closed: "\u0645\u063a\u0644\u0642", open: "\u0645\u0641\u062a\u0648\u062d", opens: "\u064a\u0641\u062a\u062d",
+    save: "\u062d\u0641\u0638", savedBtn: "\u0645\u062d\u0641\u0648\u0638",
+    leaveReview: "\u0627\u0643\u062a\u0628 \u062a\u0642\u064a\u064a\u0645\u064b\u0627",
+    updateReview: "\u0639\u062f\u0651\u0644 \u062a\u0642\u064a\u064a\u0645\u0643",
+    featuredVideo: "\u0641\u064a\u062f\u064a\u0648 \u0645\u0645\u064a\u0632",
+    tapWatch: "\u0627\u0636\u063a\u0637 \u0644\u0645\u0634\u0627\u0647\u062f\u0629 \u0627\u0644\u062a\u0642\u064a\u064a\u0645",
+    noVideos: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u064a\u062f\u064a\u0648\u0647\u0627\u062a \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0643\u0627\u0646 \u0628\u0639\u062f.",
+    addToList: "\u0623\u0636\u0641 \u0644\u0642\u0627\u0626\u0645\u0629",
+    directions: "\u0627\u0644\u0627\u062a\u062c\u0627\u0647\u0627\u062a", call: "\u0627\u062a\u0635\u0627\u0644",
+    menuL: "\u0627\u0644\u0645\u0646\u064a\u0648", share: "\u0645\u0634\u0627\u0631\u0643\u0629",
+    report: "\u0627\u0644\u0625\u0628\u0644\u0627\u063a \u0639\u0646 \u0645\u0634\u0643\u0644\u0629",
+    reviewQ: (n) => `\u0643\u064a\u0641 \u0643\u0627\u0646 \u0627\u0644\u0623\u0643\u0644 \u0641\u064a ${n}\u061f`,
+    showNumber: "\u0625\u0638\u0647\u0627\u0631 \u0627\u0644\u0631\u0642\u0645",
+    addPhotos: "\u0623\u0636\u0641 \u0635\u0648\u0631\u064b\u0627",
+    whatOrder: "\u0645\u0627\u0630\u0627 \u0637\u0644\u0628\u062a\u061f",
+    searchDish: "\u0627\u0628\u062d\u062b \u0623\u0648 \u0623\u0636\u0641 \u0637\u0628\u0642\u064b\u0627",
+    leaveDesc: "\u0627\u0643\u062a\u0628 \u0648\u0635\u0641\u064b\u0627",
+    descPh: "\u0645\u0627 \u0627\u0644\u0630\u064a \u0623\u0639\u062c\u0628\u0643\u061f \u0628\u0645\u0627\u0630\u0627 \u062a\u0646\u0635\u062d \u0623\u0635\u062f\u0642\u0627\u0621\u0643\u061f",
+    submit: "\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u062a\u0642\u064a\u064a\u0645",
+    fromContacts: "\u0645\u0646 \u062c\u0647\u0627\u062a \u0627\u0644\u0627\u062a\u0635\u0627\u0644",
+    invite: "\u062f\u0639\u0648\u0629", invited: "\u062a\u0645\u062a \u0627\u0644\u062f\u0639\u0648\u0629 \u2713",
+    noListsTitle: "\u0644\u064a\u0633 \u0644\u062f\u064a\u0643 \u0642\u0648\u0627\u0626\u0645 \u0628\u0639\u062f.",
+    noListsBody: "\u0646\u0638\u0651\u0645 \u0645\u0637\u0627\u0639\u0645\u0643 \u0627\u0644\u0645\u0641\u0636\u0644\u0629 \u0641\u064a \u0642\u0648\u0627\u0626\u0645 \u062d\u0633\u0628 \u0627\u0644\u0645\u0637\u0628\u062e \u0623\u0648 \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u0623\u0648 \u0643\u0645\u0627 \u062a\u0634\u0627\u0621. \u0627\u0636\u063a\u0637 + \u0644\u0644\u0628\u062f\u0621.",
+    noListsBody2: "\u0646\u0638\u0651\u0645 \u0645\u0637\u0627\u0639\u0645\u0643 \u0627\u0644\u0645\u0641\u0636\u0644\u0629 \u062d\u0633\u0628 \u0627\u0644\u0645\u0637\u0628\u062e \u0623\u0648 \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u0623\u0648 \u0643\u0645\u0627 \u062a\u0634\u0627\u0621.",
+    byLine: (by, n) => `\u0628\u0648\u0627\u0633\u0637\u0629 ${by} \u00b7 ${n} ${n === 1 ? "\u0645\u0637\u0639\u0645" : "\u0645\u0637\u0627\u0639\u0645"}`,
+    far: "\u0623\u0643\u062b\u0631 \u0645\u0646 \u0661\u0666\u0660 \u0643\u0645",
+    noRestInList: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0637\u0627\u0639\u0645 \u0628\u0639\u062f. \u0627\u0641\u062a\u062d \u0623\u064a \u0645\u0637\u0639\u0645 \u0648\u0627\u062e\u062a\u0631 \u00ab\u0623\u0636\u0641 \u0644\u0642\u0627\u0626\u0645\u0629\u00bb.",
+    cancel: "\u0625\u0644\u063a\u0627\u0621", listName: "\u0627\u0633\u0645 \u0627\u0644\u0642\u0627\u0626\u0645\u0629",
+    listDesc: "\u0623\u0636\u0641 \u0648\u0635\u0641\u064b\u0627 (\u0627\u062e\u062a\u064a\u0627\u0631\u064a)",
+    createList: "\u0625\u0646\u0634\u0627\u0621 \u0642\u0627\u0626\u0645\u0629",
+    addToAList: "\u0623\u0636\u0641 \u0625\u0644\u0649 \u0642\u0627\u0626\u0645\u0629",
+    noListsYet: "\u0644\u064a\u0633 \u0644\u062f\u064a\u0643 \u0642\u0648\u0627\u0626\u0645 \u0628\u0639\u062f \u2014 \u0623\u0646\u0634\u0626 \u0648\u0627\u062d\u062f\u0629 \u0644\u062d\u0641\u0638 \u0647\u0630\u0627 \u0627\u0644\u0645\u0643\u0627\u0646.",
+    newList: "\u0642\u0627\u0626\u0645\u0629 \u062c\u062f\u064a\u062f\u0629",
+    trustedBy: "\u0645\u0648\u062b\u0648\u0642 \u0645\u0646", visitedL: "\u0632\u0631\u062a\u0647\u0627",
+    savedL: "\u0645\u062d\u0641\u0648\u0638\u0629",
+    top8: "\u0623\u0641\u0636\u0644 \u0668 \u0644\u0625\u0633\u0644\u0627\u0645",
+    myListsH: "\u0642\u0648\u0627\u0626\u0645\u064a",
+    profileTitle: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a",
+    personalInfo: "\u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0634\u062e\u0635\u064a\u0629",
+    connectSocials: "\u0631\u0628\u0637 \u0627\u0644\u062d\u0633\u0627\u0628\u0627\u062a",
+    publicProfile: "\u062d\u0633\u0627\u0628 \u0639\u0627\u0645",
+    publicSub: "\u0627\u0633\u0645\u062d \u0644\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u064a\u0646 \u0627\u0644\u0622\u062e\u0631\u064a\u0646 \u0628\u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u064a\u0643 \u0648\u0645\u062a\u0627\u0628\u0639\u062a\u0643",
+    publicGate: (n) => `\u0623\u0636\u0641 \u0635\u0648\u0631\u0629 \u0634\u062e\u0635\u064a\u0629 \u0648\u0627\u0643\u062a\u0628 ${n} \u062a\u0642\u064a\u064a\u0645\u0627\u062a \u0625\u0636\u0627\u0641\u064a\u0629 \u0644\u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u062d\u0633\u0627\u0628 \u0627\u0644\u0639\u0627\u0645.`,
+    saveChanges: "\u062d\u0641\u0638 \u0627\u0644\u062a\u063a\u064a\u064a\u0631\u0627\u062a",
+    importMaps: "\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u062e\u0631\u0627\u0626\u0637 \u062c\u0648\u062c\u0644",
+    support: "\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062f\u0639\u0645",
+    logout: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c",
+    toastReview: (r) => `\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u00b7 ${r}`,
+    toastSaved: "\u062a\u0645 \u0627\u0644\u062d\u0641\u0638 \u0641\u064a \u0627\u0644\u0645\u0641\u0636\u0644\u0629",
+    toastUnsaved: "\u062a\u0645\u062a \u0627\u0644\u0625\u0632\u0627\u0644\u0629 \u0645\u0646 \u0627\u0644\u0645\u062d\u0641\u0648\u0638\u0627\u062a",
+    toastList: (n) => `\u062a\u0645 \u0625\u0646\u0634\u0627\u0621 \u0642\u0627\u0626\u0645\u0629 \u00ab${n}\u00bb`,
+    toastAdded: "\u062a\u0645\u062a \u0627\u0644\u0625\u0636\u0627\u0641\u0629 \u0625\u0644\u0649 \u0627\u0644\u0642\u0627\u0626\u0645\u0629",
+  },
+};
+let currentLang = "en";
+const t = (k, ...args) => {
+  const v = I18N[currentLang]?.[k] ?? I18N.en[k] ?? k;
+  return typeof v === "function" ? v(...args) : v;
+};
+
+
+/* ------------------------------------------------------------------ */
+/* Mock data                                                           */
+/* ------------------------------------------------------------------ */
+const CUISINES = [
+  ["🍔","Burgers"],["🍕","Pizza"],["🍱","Sushi"],["🥡","Chinese"],["🌮","Mexican"],
+  ["🇮🇹","Italian"],["🇮🇳","Indian"],["🇯🇵","Japanese"],["🇹🇭","Thai"],["🫒","Mediterranean"],
+  ["🍇","Acai"],["🇦🇫","Afghan"],["🌍","African"],["🇺🇸","American"],["🥢","Asian"],
+  ["🥯","Bagels"],["🍞","Bakery"],["🍹","Bar"],["🍺","Bar & Grill"],["🍖","BBQ"],
+  ["🇧🇷","Brazilian"],["🔍","Breakfast"],["🥞","Brunch"],["🍽️","Buffet"],["☕","Cafe"],
+  ["🍵","Coffee"],["🥪","Deli"],["🍰","Dessert"],["🍔","Diner"],["🍩","Donuts"],
+  ["🍟","Fast Food"],["🍷","Fine Dining"],["🇫🇷","French"],["🇬🇷","Greek"],["🍦","Ice Cream"],
+  ["🇰🇷","Korean"],["🇱🇧","Lebanese"],["🥘","Middle Eastern"],["🍺","Pub"],["🍜","Ramen"],
+  ["🥪","Sandwich"],["🦞","Seafood"],["🇪🇸","Spanish"],["🥩","Steakhouse"],["🍵","Tea House"],
+  ["🇹🇷","Turkish"],["🥗","Vegan"],["🥦","Vegetarian"],["🥘","Vietnamese"],["🍷","Wine Bar"],
+];
+
+const RESTAURANTS = [
+  {
+    id: 1, name: "Madre! Oaxacan Restaurant and Mezcaleria", cat: "Mexican restaurant",
+    price: 2, rating: 8.0, google: 4.5, x: 42, y: 62,
+    address: "1261 Cabrillo Ave Ste 100, Torrance, CA 90501, USA",
+    opens: "11:00 AM", closed: true, cuisine: "Mexican",
+    dishes: ["$5 Tacos","Birthday Dessert","Breakfast the Oaxacan Way","Brunch","Comida Palms",
+      "Comida Santa Clarita","Comida Torrance","Comida West Hollywood","Lamb Barbacoa",
+      "Margaritas","Oaxacan Food","Oaxacan Mole","Oaxacan Specialties","Pozole","Tacos","Taco Tuesday"],
+    photos: ["#D8A048","#8B4513","#C46B3A"], hero: "#3E2C23",
+    tiktok: { handle: "grubwithgreg", label: "Grub with Greg" },
+  },
+  {
+    id: 2, name: "rachel's ginger beer - u village", cat: "Bar",
+    price: 2, rating: 9.4, google: 4.6, x: 58, y: 38,
+    address: "4626 26th Ave NE, Seattle, WA 98105, USA",
+    opens: "10:00 AM", closed: true, cuisine: "Bar",
+    dishes: ["Moscow Mule","Frozen Cocktail","Fried Chicken Sandwich","Mac Salad","Dole Whip Float"],
+    photos: ["#E8B04B","#23272B","#F4C542"], hero: "#20262E",
+    tiktok: null,
+  },
+  {
+    id: 3, name: "Howlin' Ray's Hot Chicken - Chinatown", cat: "Southern restaurant",
+    price: 2, rating: 9.1, google: 4.7, x: 30, y: 44,
+    address: "727 N Broadway #128, Los Angeles, CA 90012, USA",
+    opens: "11:00 AM", closed: true, cuisine: "American",
+    dishes: ["The Sando","Country Tenders","Hot Wings","Collard Greens"],
+    photos: ["#B03A2E","#E67E22","#7D3C98"], hero: "#5B2C06",
+    tiktok: { handle: "howlinrays", label: "Howlin' Ray's" },
+  },
+  {
+    id: 4, name: "Bao Chick", cat: "Asian fusion",
+    price: 1, rating: 8.3, google: 4.4, x: 70, y: 55,
+    address: "2222 Michelson Dr Ste 212, Irvine, CA 92612, USA",
+    opens: "11:30 AM", closed: false, cuisine: "Asian",
+    dishes: ["Karaage Bao","Spicy Chick Bao","Loaded Fries"],
+    photos: ["#F5CBA7","#935116","#1B4F72"], hero: "#2E4053",
+    tiktok: null,
+  },
+  {
+    id: 5, name: "Dave's Hot Chicken", cat: "Fast food",
+    price: 1, rating: 7.9, google: 4.5, x: 52, y: 72,
+    address: "2065 E Katella Ave, Anaheim, CA 92806, USA",
+    opens: "10:30 AM", closed: false, cuisine: "Fast Food",
+    dishes: ["Sliders","Tenders","Cheese Fries","Shakes"],
+    photos: ["#C0392B","#F1C40F","#273746"], hero: "#7B241C",
+    tiktok: null,
+  },
+  {
+    id: 6, name: "bb.q Chicken Fullerton", cat: "Korean fried chicken",
+    price: 2, rating: 7.6, google: 4.3, x: 22, y: 68,
+    address: "2323 E Chapman Ave Unit C, Fullerton, CA 92831, USA",
+    opens: "11:00 AM", closed: true, cuisine: "Korean",
+    dishes: ["Golden Original","Secret Sauce Wings","Tteokbokki"],
+    photos: ["#D4AC0D","#943126","#1A5276"], hero: "#6E2C00",
+    tiktok: null,
+  },
+];
+
+const EXPLORE_USERS = [
+  { name: "kaitlyneats", verified: true, color: "#A7C4BC" },
+  { name: "sistersnacking", verified: true, color: "#E8C1C5" },
+  { name: "libbylamont", verified: true, color: "#B8B8D1" },
+  { name: "mr.chimetime", verified: true, color: "#C9D8B6" },
+  { name: "thelacountdown", verified: true, color: "#F2E2C4" },
+  { name: "lifeofcian", verified: true, color: "#BFD7EA" },
+  { name: "jacksdiningroom", verified: true, color: "#2E5339" },
+  { name: "tastebudtravels", verified: true, color: "#D9C7B8" },
+];
+
+const FOLLOWING_USERS = [{ name: "mr.eats305", verified: true, color: "#2F4538" }];
+const FRIEND_USERS = [{ name: "youssefmali", verified: false, color: "#CFCFCF" }, ...FOLLOWING_USERS];
+
+const CONTACTS = [
+  "Mohammed Al Sanea","Burger Delivery","Ahmed Abdul Mohsen","Marc Banoub",
+  "Ali Amr","Hazem Younis","Musaab Shami","Mahmoud Kamel",
+];
+
+const COMMUNITY_LISTS = [
+  { id: "c1", title: "top tier fried chicken", by: "Darian Seilabi", handle: "chelokababinc",
+    color: "#3B3B3B", restaurantIds: [2, 3, 4, 5, 6] },
+  { id: "c2", title: "NY's Must Haves", by: "Troy Do", handle: "troydo", color: "#8C6A5D", restaurantIds: [3] },
+  { id: "c3", title: "Houston's Must Haves", by: "Troy Do", handle: "troydo", color: "#8C6A5D", restaurantIds: [1,2,3,4,5,6] },
+  { id: "c4", title: "LA's Must Haves", by: "Troy Do", handle: "troydo", color: "#8C6A5D", restaurantIds: [1,3,5,6] },
+  { id: "c5", title: "Korea's Must Haves", by: "Troy Do", handle: "troydo", color: "#8C6A5D", restaurantIds: [6,4,2,1] },
+  { id: "c6", title: "Japan's Must Haves", by: "Troy Do", handle: "troydo", color: "#8C6A5D", restaurantIds: [4,2] },
+  { id: "c7", title: "Mi Go-To de tacos en Qro", by: "Patricio Avila", handle: "patoavila", color: "#5D7052", restaurantIds: [1] },
+  { id: "c8", title: "Menorca Must-Trys", by: "Daniel Kohanof", handle: "dkohanof", color: "#1F2733", restaurantIds: [1,2,3,4,5,6,1,2,3,4] },
+];
+
+const MICHELIN = [
+  { key: "one", label: "One Star", stars: 1 },
+  { key: "two", label: "Two Stars", stars: 2 },
+  { key: "three", label: "Three Stars", stars: 3 },
+];
+const MICHELIN2 = [
+  { key: "guide", label: "Michelin Guide", icon: "❁" },
+  { key: "bib", label: "Bib Gourmand", icon: "☺" },
+  { key: "green", label: "Green Star", icon: "✿" },
+];
+
+/* ------------------------------------------------------------------ */
+/* Small shared pieces                                                 */
+/* ------------------------------------------------------------------ */
+const Avatar = ({ color, size = 56, children }) => (
+  <div className="rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+    style={{ width: size, height: size, background: color || T.surfaceHigh }}>
+    {children || <CircleUserRound size={size * 0.55} color="#FFFFFFCC" />}
+  </div>
+);
+
+const RatingBadge = ({ value, size = "md" }) => (
+  <span className={`inline-flex items-center gap-1 rounded-full bg-white shadow-sm font-bold ${
+      size === "lg" ? "px-3 py-1.5 text-lg" : "px-2.5 py-1 text-sm"}`}
+    style={{ color: ratingColor(value) }}>
+    <Star size={size === "lg" ? 16 : 12} fill="currentColor" />{value.toFixed(1)}
+  </span>
+);
+
+const Chip = ({ active, onClick, children, leading }) => (
+  <button onClick={onClick}
+    className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+    style={{
+      background: active ? T.secondaryContainer : "transparent",
+      borderColor: active ? T.secondaryContainer : T.outlineVariant,
+      color: active ? T.onSecondaryContainer : T.onSurfaceVariant,
+    }}>
+    {active && <Check size={14} />}{leading}{children}
+  </button>
+);
+
+const FilledButton = ({ children, onClick, className = "", tone = "primary" }) => (
+  <button onClick={onClick}
+    className={`rounded-full py-3.5 px-6 font-semibold text-sm tracking-wide active:opacity-80 ${className}`}
+    style={tone === "primary"
+      ? { background: T.primary, color: T.onPrimary }
+      : { background: T.secondaryContainer, color: T.onSecondaryContainer }}>
+    {children}
+  </button>
+);
+
+const SectionLabel = ({ children }) => (
+  <div className="text-xs font-bold tracking-widest mb-3" style={{ color: T.onSurfaceVariant }}>
+    {children}
+  </div>
+);
+
+const SegTabs = ({ tabs, value, onChange }) => (
+  <div className="flex rounded-full p-1" style={{ background: T.surfaceContainer }}>
+    {tabs.map((tb) => (
+      <button key={tb} onClick={() => onChange(tb)}
+        className="flex-1 rounded-full py-2.5 text-sm font-semibold transition-all"
+        style={value === tb
+          ? { background: T.primary, color: T.onPrimary, boxShadow: "0 1px 3px rgba(0,0,0,.15)" }
+          : { color: T.onSurfaceVariant }}>
+        {t(tb)}
+      </button>
+    ))}
+  </div>
+);
+
+const VerifiedBadge = () => <BadgeCheck size={18} fill={T.primary} color="#fff" className="shrink-0" />;
+
+/* ------------------------------------------------------------------ */
+/* Map screen                                                          */
+/* ------------------------------------------------------------------ */
+const MapCanvas = ({ onPin, selectedId }) => (
+  <div className="absolute inset-0" style={{ background: "#EDEAE0" }}>
+    {/* stylized street grid */}
+    <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#EDEAE0" />
+      <path d="M0 20 L100 8" stroke="#D8D4C6" strokeWidth="2.4" fill="none" />
+      <path d="M0 45 L100 30" stroke="#CFCBBC" strokeWidth="3.4" fill="none" />
+      <path d="M0 78 L100 62" stroke="#D8D4C6" strokeWidth="2.4" fill="none" />
+      <path d="M18 0 L30 100" stroke="#CFCBBC" strokeWidth="3" fill="none" />
+      <path d="M52 0 L60 100" stroke="#D8D4C6" strokeWidth="2.2" fill="none" />
+      <path d="M80 0 L74 100" stroke="#CFCBBC" strokeWidth="3" fill="none" />
+      <path d="M0 60 Q50 52 100 46" stroke="#E2DFD3" strokeWidth="1.4" fill="none" />
+      <path d="M36 0 L42 100" stroke="#E2DFD3" strokeWidth="1.2" fill="none" />
+      {/* parks + water */}
+      <rect x="6" y="6" width="10" height="8" rx="2" fill="#BCD9AE" />
+      <rect x="62" y="70" width="12" height="9" rx="2" fill="#BCD9AE" />
+      <rect x="40" y="14" width="8" height="6" rx="2" fill="#BCD9AE" />
+      <path d="M0 0 L10 0 L4 12 L0 14 Z" fill="#BFD9EA" />
+    </svg>
+    {/* district labels */}
+    {[["WESTLAKE",14,16],["BROADMOOR",44,22],["ST. FRANCIS",30,40],["SERRAMONTE",50,58],
+      ["FAIRMONT",16,62],["COLMA",80,44],["WESTVIEW",26,86],["SERRA HIGHLANDS",78,82]].map(([n,x,y]) => (
+      <span key={n} className="absolute text-[10px] font-semibold tracking-widest"
+        style={{ left: `${x}%`, top: `${y}%`, color: "#9B978A", transform: "translate(-50%,-50%)" }}>{n}</span>
+    ))}
+    {/* rating pins */}
+    {RESTAURANTS.map((r) => (
+      <button key={r.id} onClick={() => onPin(r)}
+        className="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center"
+        style={{ left: `${r.x}%`, top: `${r.y}%` }}>
+        <span className="rounded-full px-2.5 py-1.5 text-sm font-bold shadow-md border-2 transition-transform"
+          style={{
+            background: selectedId === r.id ? T.primary : "#fff",
+            color: selectedId === r.id ? "#fff" : ratingColor(r.rating),
+            borderColor: selectedId === r.id ? T.primary : "#fff",
+            transform: selectedId === r.id ? "scale(1.15)" : "scale(1)",
+          }}>
+          {r.rating.toFixed(1)}
+        </span>
+        <span className="w-2 h-2 rotate-45 -mt-1 shadow"
+          style={{ background: selectedId === r.id ? T.primary : "#fff" }} />
+      </button>
+    ))}
+  </div>
+);
+
+const MapScreen = ({ openRestaurant, openFilters, query, setQuery }) => {
+  const [selected, setSelected] = useState(RESTAURANTS[0]);
+  return (
+    <div className="absolute inset-0 flex flex-col">
+      <div className="relative flex-1 overflow-hidden">
+        <MapCanvas onPin={setSelected} selectedId={selected?.id} />
+        {/* floating locate */}
+        <button className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white shadow-md flex items-center justify-center">
+          <Navigation size={18} color={T.onSurface} />
+        </button>
+        {/* selected card carousel */}
+        {selected && (
+          <div className="absolute bottom-3 left-0 right-0 px-4 flex gap-3 overflow-x-auto no-scrollbar">
+            {[selected, ...RESTAURANTS.filter((r) => r.id !== selected.id).slice(0, 2)].map((r) => (
+              <button key={r.id} onClick={() => openRestaurant(r)}
+                className="bg-white rounded-3xl shadow-lg p-3 flex gap-3 items-center text-left shrink-0 w-[85%]">
+                <div className="w-20 h-20 rounded-2xl shrink-0" style={{ background: r.hero }} />
+                <div className="min-w-0">
+                  <div className="font-bold leading-snug line-clamp-2" style={{ color: T.onSurface }}>{r.name}</div>
+                  <div className="text-sm mt-0.5" style={{ color: T.onSurfaceVariant }}>
+                    {r.cat} · {"$".repeat(r.price)}
+                  </div>
+                  <span className="inline-block mt-1.5 text-[11px] font-bold tracking-widest rounded-full border px-2.5 py-0.5"
+                    style={{ color: r.closed ? T.onSurfaceVariant : T.primary, borderColor: T.outlineVariant }}>
+                    {r.closed ? t("closed") : t("open")}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* bottom control sheet */}
+      <div className="px-4 pt-3 pb-2" style={{ background: T.surface }}>
+        <div className="mx-auto w-10 h-1 rounded-full mb-3" style={{ background: T.outlineVariant }} />
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
+          <button onClick={openFilters}
+            className="w-11 h-11 rounded-full border flex items-center justify-center shrink-0"
+            style={{ borderColor: T.outlineVariant, background: "#fff" }}>
+            <SlidersHorizontal size={18} color={T.onSurface} />
+          </button>
+          <Chip active leading={<Bookmark size={14} fill={T.primary} color={T.primary} />}>{t("hitlist")}</Chip>
+          <Chip leading={<Users size={14} />}>{t("anyone")}</Chip>
+          <Chip leading={<MapPin size={14} />}>{t("nearMe")}</Chip>
+        </div>
+        <div className="flex items-center gap-3 rounded-full px-4 py-3.5 mb-1"
+          style={{ background: T.surfaceContainer }}>
+          <Search size={20} color={T.onSurfaceVariant} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("searchRest")}
+            className="bg-transparent outline-none flex-1 text-base"
+            style={{ color: T.onSurface }} />
+          {query && <button onClick={() => setQuery("")}><X size={18} color={T.onSurfaceVariant} /></button>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Filters bottom sheet                                                */
+/* ------------------------------------------------------------------ */
+const FiltersSheet = ({ onClose }) => {
+  const [sel, setSel] = useState(new Set());
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [stars, setStars] = useState(new Set());
+  const toggle = (set, setter, key) => {
+    const n = new Set(set); n.has(key) ? n.delete(key) : n.add(key); setter(n);
+  };
+  const clearAll = () => { setSel(new Set()); setStars(new Set()); setFriendsOnly(false); };
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative rounded-t-[28px] max-h-[92%] flex flex-col" style={{ background: T.surface }}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-2">
+          <h2 className="text-2xl font-extrabold" style={{ color: T.onSurface }}>{t("filters")}</h2>
+          <div className="flex items-center gap-4">
+            {(sel.size > 0 || stars.size > 0 || friendsOnly) && (
+              <button onClick={clearAll} className="text-sm font-semibold" style={{ color: T.tertiary }}>
+                {t("clearAll")}
+              </button>
+            )}
+            <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: T.surfaceContainer }}>
+              <X size={20} color={T.onSurface} />
+            </button>
+          </div>
+        </div>
+        <div className="overflow-y-auto px-5 pb-6">
+          <SectionLabel>{t("location")}</SectionLabel>
+          <div className="flex items-center gap-3 rounded-full px-4 py-3.5 mb-5"
+            style={{ background: T.surfaceContainer }}>
+            <Search size={18} color={T.onSurfaceVariant} />
+            <input placeholder={t("searchCuisine")} className="bg-transparent outline-none flex-1 text-sm"
+              style={{ color: T.onSurface }} />
+          </div>
+          <SectionLabel>{t("cuisineL")}</SectionLabel>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {CUISINES.map(([emoji, label]) => (
+              <Chip key={label} active={sel.has(label)} onClick={() => toggle(sel, setSel, label)}
+                leading={<span>{emoji}</span>}>{label}</Chip>
+            ))}
+          </div>
+          <SectionLabel>{t("otherFilters")}</SectionLabel>
+          <div className="flex items-center justify-between py-2 mb-4">
+            <span className="text-base font-medium" style={{ color: T.onSurface }}>
+              {t("friendsRec")}
+            </span>
+            <button onClick={() => setFriendsOnly(!friendsOnly)}
+              className="w-14 h-8 rounded-full p-1 transition-colors"
+              style={{ background: friendsOnly ? T.primary : T.outlineVariant }}>
+              <div className="w-6 h-6 rounded-full bg-white shadow transition-transform"
+                style={{ transform: friendsOnly ? "translateX(24px)" : "translateX(0)" }} />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {MICHELIN.map((m) => (
+              <Chip key={m.key} active={stars.has(m.key)} onClick={() => toggle(stars, setStars, m.key)}
+                leading={<span style={{ color: "#C4302B" }}>{"❁".repeat(m.stars)}</span>}>
+                {m.label}
+              </Chip>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {MICHELIN2.map((m) => (
+              <Chip key={m.key} active={stars.has(m.key)} onClick={() => toggle(stars, setStars, m.key)}
+                leading={<span style={{ color: m.key === "green" ? "#2E7D32" : "#C4302B" }}>{m.icon}</span>}>
+                {m.label}
+              </Chip>
+            ))}
+          </div>
+          <FilledButton className="w-full" onClick={onClose}>{t("apply")}</FilledButton>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Restaurant detail                                                   */
+/* ------------------------------------------------------------------ */
+const ActionPill = ({ icon: Icon, label, onClick }) => (
+  <button onClick={onClick}
+    className="flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold"
+    style={{ borderColor: T.outline, color: T.onSurface }}>
+    <Icon size={16} />{label}
+  </button>
+);
+
+const RestaurantDetail = ({ r, onClose, onReview, onAddToList, saved, toggleSave, myReview }) => (
+  <div className="absolute inset-0 z-30 overflow-y-auto" style={{ background: T.surface }}>
+    {/* hero */}
+    <div className="relative h-56" style={{ background: `linear-gradient(180deg, ${r.hero}, ${r.hero}66, ${T.surface})` }}>
+      <button onClick={onClose}
+        className="absolute top-4 left-4 w-11 h-11 rounded-full bg-white shadow flex items-center justify-center">
+        <ChevronLeft size={22} color={T.onSurface} />
+      </button>
+      <button onClick={toggleSave}
+        className="absolute top-4 right-4 flex items-center gap-2 rounded-full bg-white shadow px-4 py-2.5 font-semibold text-sm">
+        <Bookmark size={16} fill={saved ? T.primary : "none"} color={saved ? T.primary : T.onSurface} />
+        {saved ? t("savedBtn") : t("save")}
+      </button>
+    </div>
+    <div className="px-5 -mt-10 relative">
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="text-3xl font-extrabold leading-tight" style={{ color: T.onSurface }}>{r.name}</h1>
+        <RatingBadge value={myReview ? myReview.rating : r.rating} size="lg" />
+      </div>
+      <div className="mt-2 font-semibold" style={{ color: T.onSurface }}>
+        {r.cat} · {"$".repeat(r.price)}
+      </div>
+      <div className="mt-1 text-sm" style={{ color: T.onSurfaceVariant }}>{r.address}</div>
+      <div className="mt-3 flex items-center gap-3">
+        <span className="text-[11px] font-bold tracking-widest rounded-full border px-3 py-1"
+          style={{ color: r.closed ? T.onSurfaceVariant : T.primary, borderColor: T.outlineVariant }}>
+          {r.closed ? t("closed") : t("open")}
+        </span>
+        <span className="font-semibold text-sm" style={{ color: T.onSurface }}>{t("opens")} {r.opens} ▾</span>
+      </div>
+      {/* photos */}
+      <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar">
+        {r.photos.map((c, i) => (
+          <div key={i} className="w-40 h-40 rounded-3xl shrink-0"
+            style={{ background: `linear-gradient(135deg, ${c}, ${c}99)` }} />
+        ))}
+      </div>
+      <FilledButton className="w-full mt-5" onClick={onReview}>
+        {myReview ? `${t("updateReview")} · ${myReview.rating.toFixed(1)}` : t("leaveReview")}
+      </FilledButton>
+      {/* video embed placeholder */}
+      <div className="mt-6">
+        <SectionLabel>{t("featuredVideo")}</SectionLabel>
+        {r.tiktok ? (
+          <div className="rounded-3xl overflow-hidden text-white p-4 h-64 flex flex-col justify-between"
+            style={{ background: "#101418" }}>
+            <div className="flex items-center gap-3">
+              <Avatar size={40} color="#37474F" />
+              <div>
+                <div className="font-bold">{r.tiktok.label}</div>
+                <div className="text-xs opacity-70">@{r.tiktok.handle}</div>
+              </div>
+              <Music2 size={20} className="ml-auto opacity-80" />
+            </div>
+            <div className="text-xs opacity-60">{t("tapWatch")}</div>
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed p-6 text-center text-sm"
+            style={{ borderColor: T.outlineVariant, color: T.onSurfaceVariant }}>
+            {t("noVideos")}
+          </div>
+        )}
+      </div>
+      {/* actions */}
+      <div className="mt-6 pt-5 border-t flex flex-wrap justify-center gap-2.5"
+        style={{ borderColor: T.outlineVariant }}>
+        <ActionPill icon={ListChecks} label={t("addToList")} onClick={onAddToList} />
+        <ActionPill icon={Navigation} label={t("directions")} />
+        <ActionPill icon={Phone} label={t("call")} />
+        <ActionPill icon={BookOpen} label={t("menuL")} />
+        <ActionPill icon={Share2} label={t("share")} />
+        <ActionPill icon={Flag} label={t("report")} />
+      </div>
+      <div className="my-6 flex justify-center">
+        <span className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold"
+          style={{ borderColor: T.outline, color: T.onSurface }}>
+          <span style={{ color: "#4285F4" }}>G</span> {r.google.toFixed(1)} ★
+        </span>
+      </div>
+      <div className="h-24" />
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* Review sheet                                                        */
+/* ------------------------------------------------------------------ */
+const ReviewSheet = ({ r, onClose, onSubmit, existing }) => {
+  const [rating, setRating] = useState(existing?.rating ?? 7.0);
+  const [showNumber, setShowNumber] = useState(true);
+  const [dishes, setDishes] = useState(new Set(existing?.dishes ?? []));
+  const [customDish, setCustomDish] = useState("");
+  const [allDishes, setAllDishes] = useState(r.dishes);
+  const [desc, setDesc] = useState(existing?.desc ?? "");
+  const [photos, setPhotos] = useState(existing?.photos ?? 0);
+
+  const toggleDish = (d) => {
+    const n = new Set(dishes); n.has(d) ? n.delete(d) : n.add(d); setDishes(n);
+  };
+  const addCustom = () => {
+    const d = customDish.trim();
+    if (!d) return;
+    if (!allDishes.includes(d)) setAllDishes([...allDishes, d]);
+    toggleDish(d); setCustomDish("");
+  };
+  const step = (delta) => setRating((v) => Math.min(10, Math.max(0, Math.round((v + delta) * 10) / 10)));
+
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative rounded-t-[28px] max-h-[94%] flex flex-col" style={{ background: T.surface }}>
+        <div className="overflow-y-auto px-5 pt-4 pb-8">
+          <div className="flex justify-end">
+            <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: T.surfaceContainer }}>
+              <X size={20} color={T.onSurface} />
+            </button>
+          </div>
+          <h2 className="text-2xl font-extrabold text-center leading-snug mt-1 mb-8 px-2"
+            style={{ color: T.onSurface }}>
+            {t("reviewQ", r.name)}
+          </h2>
+          {/* slider */}
+          <div className="relative px-1 mb-3">
+            <input type="range" min="0" max="10" step="0.1" value={rating}
+              onChange={(e) => setRating(parseFloat(e.target.value))}
+              className="w-full m3-slider"
+              style={{
+                background: `linear-gradient(to right, ${T.onSurface} ${rating * 10}%, ${T.outlineVariant} ${rating * 10}%)`,
+              }} />
+            {showNumber && (
+              <div className="absolute -top-1 pointer-events-none" style={{ left: `calc(${rating * 10}% - 28px)` }}>
+                <span className="rounded-full bg-white shadow-md px-3 py-1.5 font-extrabold text-lg"
+                  style={{ color: ratingColor(rating) }}>
+                  {rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between mb-8">
+            <button onClick={() => step(-0.1)} className="w-12 h-10 rounded-2xl font-bold text-lg"
+              style={{ background: T.surfaceContainer, color: T.onSurface }}>
+              <Minus size={18} className="mx-auto" />
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold tracking-widest" style={{ color: T.onSurfaceVariant }}>
+                {t("showNumber")}
+              </span>
+              <button onClick={() => setShowNumber(!showNumber)}
+                className="w-12 h-7 rounded-full p-0.5 transition-colors"
+                style={{ background: showNumber ? T.primary : T.outlineVariant }}>
+                <div className="w-6 h-6 rounded-full bg-white shadow transition-transform"
+                  style={{ transform: showNumber ? "translateX(20px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            <button onClick={() => step(0.1)} className="w-12 h-10 rounded-2xl font-bold text-lg"
+              style={{ background: T.surfaceContainer, color: T.onSurface }}>
+              <Plus size={18} className="mx-auto" />
+            </button>
+          </div>
+          {/* photos */}
+          <SectionLabel>{t("addPhotos")}</SectionLabel>
+          <div className="flex gap-3 mb-8">
+            {Array.from({ length: photos }).map((_, i) => (
+              <div key={i} className="w-24 h-24 rounded-2xl flex items-center justify-center"
+                style={{ background: T.primaryContainer }}>
+                <Camera size={22} color={T.onPrimaryContainer} />
+              </div>
+            ))}
+            <button onClick={() => setPhotos(photos + 1)}
+              className="w-24 h-24 rounded-2xl flex items-center justify-center"
+              style={{ background: T.surfaceContainer }}>
+              <Plus size={26} color={T.onSurfaceVariant} />
+            </button>
+          </div>
+          {/* dishes */}
+          <SectionLabel>{t("whatOrder")}</SectionLabel>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {allDishes.map((d) => (
+              <Chip key={d} active={dishes.has(d)} onClick={() => toggleDish(d)}>{d}</Chip>
+            ))}
+          </div>
+          <div className="flex gap-2 mb-8">
+            <div className="flex-1 rounded-full px-4 py-3 flex items-center"
+              style={{ background: T.surfaceContainer }}>
+              <input value={customDish} onChange={(e) => setCustomDish(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addCustom()}
+                placeholder={t("searchDish")} className="bg-transparent outline-none flex-1 text-sm"
+                style={{ color: T.onSurface }} />
+            </div>
+            <button onClick={addCustom} className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{ background: T.surfaceContainer }}>
+              <Plus size={20} color={T.onSurface} />
+            </button>
+          </div>
+          {/* description */}
+          <SectionLabel>{t("leaveDesc")}</SectionLabel>
+          <textarea value={desc} onChange={(e) => setDesc(e.target.value)}
+            placeholder={t("descPh")}
+            className="w-full rounded-3xl p-4 text-sm outline-none resize-none h-32 mb-6"
+            style={{ background: T.surfaceContainer, color: T.onSurface }} />
+          <FilledButton className="w-full"
+            onClick={() => onSubmit({ rating, dishes: [...dishes], desc, photos })}>
+            {t("submit")}
+          </FilledButton>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* People                                                              */
+/* ------------------------------------------------------------------ */
+const UserRow = ({ u }) => (
+  <button className="w-full flex items-center gap-4 py-3 text-left">
+    <Avatar color={u.color} />
+    <span className="font-bold text-lg flex items-center gap-1.5" style={{ color: T.onSurface }}>
+      {u.name}{u.verified && <VerifiedBadge />}
+    </span>
+    <ChevronRight size={18} color={T.outlineVariant} className="ml-auto" />
+  </button>
+);
+
+const ContactRow = ({ name, invited, onInvite }) => (
+  <div className="flex items-center justify-between py-3.5">
+    <span className="font-semibold text-lg" style={{ color: T.onSurface }}>{name}</span>
+    <button onClick={onInvite}
+      className="rounded-full px-6 py-2.5 text-sm font-semibold border transition-colors"
+      style={invited
+        ? { background: T.secondaryContainer, borderColor: T.secondaryContainer, color: T.onSecondaryContainer }
+        : { background: "#fff", borderColor: T.outlineVariant, color: T.onSurface }}>
+      {invited ? t("invited") : t("invite")}
+    </button>
+  </div>
+);
+
+const PeopleScreen = () => {
+  const [tab, setTab] = useState("tabExplore");
+  const [invited, setInvited] = useState(new Set());
+  const invite = (n) => setInvited(new Set([...invited, n]));
+  return (
+    <div className="absolute inset-0 flex flex-col" style={{ background: T.surface }}>
+      <div className="px-5 pt-6">
+        <h1 className="text-4xl font-extrabold mb-5" style={{ color: T.onSurface }}>{t("peopleH")}</h1>
+        <SegTabs tabs={["tabExplore", "tabFriends", "tabFollowing"]} value={tab} onChange={setTab} />
+      </div>
+      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-28">
+        {tab === "tabExplore" && EXPLORE_USERS.map((u) => <UserRow key={u.name} u={u} />)}
+        {tab !== "tabExplore" && (
+          <>
+            {(tab === "tabFriends" ? FRIEND_USERS : FOLLOWING_USERS).map((u) => <UserRow key={u.name} u={u} />)}
+            <div className="mt-4 mb-1 text-xs font-bold tracking-widest" style={{ color: T.onSurfaceVariant }}>
+              {t("fromContacts")}
+            </div>
+            {CONTACTS.map((c) => (
+              <ContactRow key={c} name={c} invited={invited.has(c)} onInvite={() => invite(c)} />
+            ))}
+          </>
+        )}
+      </div>
+      <div className="absolute bottom-20 left-0 right-0 px-5 pointer-events-none">
+        <div className="flex items-center gap-3 rounded-full px-4 py-3.5 shadow-lg pointer-events-auto"
+          style={{ background: T.surfaceHigh }}>
+          <Search size={20} color={T.onSurfaceVariant} />
+          <input placeholder={t("searchPeople")} className="bg-transparent outline-none flex-1"
+            style={{ color: T.onSurface }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Lists                                                               */
+/* ------------------------------------------------------------------ */
+const ListRow = ({ list, count, onOpen }) => (
+  <button onClick={onOpen} className="w-full flex items-center gap-4 py-4 text-left border-b"
+    style={{ borderColor: T.outlineVariant }}>
+    <Avatar color={list.color} size={60} />
+    <div className="min-w-0 flex-1">
+      <div className="font-extrabold text-lg leading-snug" style={{ color: T.onSurface }}>{list.title}</div>
+      <div className="text-sm mt-0.5" style={{ color: T.onSurfaceVariant }}>
+        {t("byLine", list.by, count)}
+      </div>
+    </div>
+    <ChevronRight size={18} color={T.outlineVariant} />
+  </button>
+);
+
+const ListDetail = ({ list, onClose, openRestaurant }) => {
+  const items = list.restaurantIds.map((id) => RESTAURANTS.find((r) => r.id === id)).filter(Boolean);
+  return (
+    <div className="absolute inset-0 z-30 overflow-y-auto" style={{ background: T.surface }}>
+      <div className="px-5 pt-5">
+        <button onClick={onClose}
+          className="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center mb-5">
+          <ChevronLeft size={22} color={T.onSurface} />
+        </button>
+        <div className="flex items-center gap-3 mb-2">
+          <Avatar color={list.color} size={40} />
+          <span className="font-semibold" style={{ color: T.onSurface }}>{list.handle || list.by}</span>
+        </div>
+        <h1 className="text-4xl font-extrabold mb-4 pb-4 border-b"
+          style={{ color: T.onSurface, borderColor: T.onSurface }}>
+          {list.title}
+        </h1>
+        {items.length === 0 && (
+          <div className="text-center py-16 text-sm" style={{ color: T.onSurfaceVariant }}>
+            {t("noRestInList")}
+          </div>
+        )}
+        {items.map((r) => (
+          <button key={r.id + Math.random()} onClick={() => openRestaurant(r)}
+            className="w-full flex items-center gap-3 py-5 border-b text-left"
+            style={{ borderColor: T.outlineVariant }}>
+            <div className="min-w-0 flex-1">
+              <div className="font-extrabold text-lg leading-snug" style={{ color: T.onSurface }}>{r.name}</div>
+              <div className="text-sm mt-1" style={{ color: T.onSurfaceVariant }}>{r.address}</div>
+            </div>
+            <div className="flex flex-col items-center shrink-0">
+              <RatingBadge value={r.rating} />
+              <span className="text-xs mt-1" style={{ color: T.onSurfaceVariant }}>{t("far")}</span>
+            </div>
+            <ChevronRight size={18} color={T.outlineVariant} />
+          </button>
+        ))}
+        <div className="h-24" />
+      </div>
+    </div>
+  );
+};
+
+const CreateListSheet = ({ onClose, onCreate }) => {
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative rounded-t-[28px] p-5 pb-8" style={{ background: T.surface }}>
+        <div className="mx-auto w-10 h-1 rounded-full mb-4" style={{ background: T.outlineVariant }} />
+        <button onClick={onClose}
+          className="rounded-full bg-white shadow px-5 py-2.5 font-bold text-sm mb-5"
+          style={{ color: T.onSurface }}>
+          {t("cancel")}
+        </button>
+        <div className="flex items-center gap-3 mb-5 pt-4 border-t" style={{ borderColor: T.outlineVariant }}>
+          <Avatar size={44} />
+          <span className="font-extrabold text-lg" style={{ color: T.onSurface }}>Islam Quandil</span>
+        </div>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("listName")}
+          className="w-full rounded-2xl bg-white px-4 py-4 mb-3 outline-none text-base shadow-sm"
+          style={{ color: T.onSurface }} />
+        <textarea value={desc} onChange={(e) => setDesc(e.target.value)}
+          placeholder={t("listDesc")}
+          className="w-full rounded-2xl bg-white px-4 py-4 mb-5 outline-none text-base h-28 resize-none shadow-sm"
+          style={{ color: T.onSurface }} />
+        <FilledButton className="w-full" onClick={() => name.trim() && onCreate(name.trim(), desc.trim())}>
+          {t("createList")}
+        </FilledButton>
+      </div>
+    </div>
+  );
+};
+
+const ListsScreen = ({ myLists, openList, openCreate }) => {
+  const [tab, setTab] = useState("tabAll");
+  return (
+    <div className="absolute inset-0 flex flex-col" style={{ background: T.surface }}>
+      <div className="px-5 pt-6">
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-4xl font-extrabold" style={{ color: T.onSurface }}>{t("listsH")}</h1>
+          <button onClick={openCreate}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow"
+            style={{ background: T.primaryContainer }}>
+            <Plus size={26} color={T.onPrimaryContainer} />
+          </button>
+        </div>
+        <SegTabs tabs={["tabAll", "tabMine"]} value={tab} onChange={setTab} />
+      </div>
+      <div className="flex-1 overflow-y-auto px-5 pt-2 pb-24">
+        {tab === "tabAll" &&
+          COMMUNITY_LISTS.map((l) => (
+            <ListRow key={l.id} list={l} count={l.restaurantIds.length} onOpen={() => openList(l)} />
+          ))}
+        {tab === "tabMine" && myLists.length === 0 && (
+          <div className="text-center px-6 pt-28 text-base leading-relaxed" style={{ color: T.onSurfaceVariant }}>
+            <div className="font-bold mb-3" style={{ color: T.onSurface }}>{t("noListsTitle")}</div>
+            {t("noListsBody")}
+          </div>
+        )}
+        {tab === "tabMine" &&
+          myLists.map((l) => (
+            <ListRow key={l.id} list={l} count={l.restaurantIds.length} onOpen={() => openList(l)} />
+          ))}
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Profile + settings                                                  */
+/* ------------------------------------------------------------------ */
+const ProfileScreen = ({ stats, myLists, openSettings, openList }) => (
+  <div className="absolute inset-0 overflow-y-auto pb-24" style={{ background: T.surface }}>
+    <div className="px-5 pt-5">
+      <div className="flex justify-end gap-3">
+        <button className="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center">
+          <SlidersHorizontal size={18} color={T.onSurface} />
+        </button>
+        <button onClick={openSettings}
+          className="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center">
+          <Settings size={18} color={T.onSurface} />
+        </button>
+      </div>
+      <div className="flex items-end justify-between mt-16 mb-6">
+        <div>
+          <div className="text-sm font-semibold" style={{ color: T.onSurfaceVariant }}>Jellyfish</div>
+          <h1 className="text-4xl font-extrabold" style={{ color: T.onSurface }}>Islam Quandil</h1>
+          <div className="flex items-center gap-2 mt-4">
+            <span className="text-xs font-bold tracking-widest" style={{ color: T.onSurfaceVariant }}>{t("trustedBy")}</span>
+            <span className="rounded-lg px-2.5 py-0.5 text-sm font-bold"
+              style={{ background: T.surfaceContainer, color: T.onSurface }}>0</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-3">
+          <Avatar size={96} />
+          <div className="flex gap-2">
+            <span className="w-9 h-9 rounded-full bg-white shadow flex items-center justify-center">
+              <Instagram size={16} color={T.onSurface} />
+            </span>
+            <span className="w-9 h-9 rounded-full bg-white shadow flex items-center justify-center">
+              <Music2 size={16} color={T.onSurface} />
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-8 py-4 border-y" style={{ borderColor: T.outlineVariant }}>
+        <span className="flex items-center gap-2 font-bold" style={{ color: T.onSurface }}>
+          <span className="w-6 h-6 rounded-full flex items-center justify-center"
+            style={{ background: "#1B7A3D" }}>
+            <Check size={14} color="#fff" />
+          </span>
+          {t("visitedL")}
+          <span className="rounded-lg px-2 py-0.5 text-sm" style={{ background: T.surfaceContainer }}>{stats.visited}</span>
+        </span>
+        <span className="w-px h-6" style={{ background: T.outlineVariant }} />
+        <span className="flex items-center gap-2 font-bold" style={{ color: T.onSurface }}>
+          <Bookmark size={20} fill={T.primary} color={T.primary} />
+          {t("savedL")}
+          <span className="rounded-lg px-2 py-0.5 text-sm" style={{ background: T.surfaceContainer }}>{stats.saved}</span>
+        </span>
+      </div>
+      <div className="flex items-center gap-2 mt-8 mb-3">
+        <h2 className="text-2xl font-extrabold" style={{ color: T.onSurface }}>{t("top8")}</h2>
+        <button className="w-9 h-9 rounded-full bg-white shadow flex items-center justify-center">
+          <Pencil size={14} color={T.onSurface} />
+        </button>
+      </div>
+      <div className="grid grid-cols-4 gap-2 mb-8">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="aspect-square rounded-2xl border border-dashed flex items-center justify-center"
+            style={{ borderColor: T.outlineVariant }}>
+            <Plus size={18} color={T.outlineVariant} />
+          </div>
+        ))}
+      </div>
+      <h3 className="text-xl font-extrabold mb-2" style={{ color: T.onSurface }}>
+        {t("myListsH")} ({myLists.length})
+      </h3>
+      {myLists.length === 0 ? (
+        <div className="text-center px-4 py-10 text-base leading-relaxed" style={{ color: T.onSurfaceVariant }}>
+          <div className="font-bold mb-2" style={{ color: T.onSurface }}>{t("noListsTitle")}</div>
+          {t("noListsBody2")}
+        </div>
+      ) : (
+        myLists.map((l) => (
+          <ListRow key={l.id} list={l} count={l.restaurantIds.length} onOpen={() => openList(l)} />
+        ))
+      )}
+    </div>
+  </div>
+);
+
+const Field = ({ children }) => (
+  <div className="px-4 py-4 border-b last:border-0 text-base" style={{ borderColor: T.outlineVariant, color: T.onSurface }}>
+    {children}
+  </div>
+);
+
+const SettingsScreen = ({ onClose, reviewCount }) => {
+  const remaining = Math.max(0, 10 - reviewCount);
+  const canGoPublic = remaining === 0;
+  const [isPublic, setIsPublic] = useState(false);
+  return (
+    <div className="absolute inset-0 z-30 overflow-y-auto pb-10" style={{ background: T.surface }}>
+      <div className="relative flex items-center justify-center py-4">
+        <button onClick={onClose}
+          className="absolute left-4 w-11 h-11 rounded-full bg-white shadow flex items-center justify-center">
+          <ChevronLeft size={22} color={T.onSurface} />
+        </button>
+        <h1 className="text-xl font-extrabold" style={{ color: T.onSurface }}>{t("profileTitle")}</h1>
+      </div>
+      <div className="flex justify-center py-4">
+        <div className="relative">
+          <Avatar size={140} color="#fff">
+            <CircleUserRound size={80} color={T.onSurface} />
+          </Avatar>
+          <button className="absolute bottom-1 right-1 w-11 h-11 rounded-full flex items-center justify-center shadow"
+            style={{ background: T.primary }}>
+            <Pencil size={16} color="#fff" />
+          </button>
+        </div>
+      </div>
+      <div className="px-5">
+        <SectionLabel>{t("personalInfo")}</SectionLabel>
+        <div className="rounded-3xl bg-white shadow-sm mb-2 overflow-hidden">
+          <Field>Islam</Field>
+          <Field>Quandil</Field>
+          <Field>islamabdulwahab916@gmail.com</Field>
+          <Field>+201111171916</Field>
+          <Field>Jellyfish</Field>
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold" style={{ color: T.onSurface }}>{t("publicProfile")}</div>
+                <div className="text-sm" style={{ color: T.onSurfaceVariant }}>
+                  {t("publicSub")}
+                </div>
+              </div>
+              <button onClick={() => canGoPublic && setIsPublic(!isPublic)}
+                className="w-14 h-8 rounded-full p-1 transition-colors"
+                style={{ background: isPublic ? T.primary : T.outlineVariant, opacity: canGoPublic ? 1 : 0.5 }}>
+                <div className="w-6 h-6 rounded-full bg-white shadow transition-transform"
+                  style={{ transform: isPublic ? "translateX(24px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            {!canGoPublic && (
+              <div className="mt-3 rounded-2xl px-4 py-3 text-sm flex gap-2 items-start"
+                style={{ background: T.tertiaryContainer, color: "#4A2800" }}>
+                <span className="font-bold">i</span>
+                {t("publicGate", remaining)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="mt-6"><SectionLabel>{t("connectSocials")}</SectionLabel></div>
+        <div className="rounded-3xl bg-white shadow-sm overflow-hidden mb-4">
+          <Field><span className="flex items-center gap-3"><Instagram size={18} /> islamqndl</span></Field>
+          <Field><span className="flex items-center gap-3"><Music2 size={18} /> @thejellyfish</span></Field>
+        </div>
+        <button className="w-full rounded-full py-3.5 font-semibold text-sm mb-8"
+          style={{ background: T.surfaceHigh, color: T.onSurfaceVariant }}>
+          {t("saveChanges")}
+        </button>
+        <div className="flex items-center justify-between mb-3">
+          <span className="flex items-center gap-2 font-extrabold text-lg" style={{ color: T.onSurface }}>
+            <MapPin size={20} color={T.primary} /> Google Maps
+          </span>
+        </div>
+        <FilledButton className="w-full mb-3">
+          <span className="flex items-center justify-center gap-2"><Import size={16} /> {t("importMaps")}</span>
+        </FilledButton>
+        <button className="w-full rounded-full py-3.5 font-semibold text-sm mb-3 flex items-center justify-center gap-2"
+          style={{ background: "#1A73E8", color: "#fff" }}>
+          <LifeBuoy size={16} /> {t("support")}
+        </button>
+        <button className="w-full rounded-full py-3.5 font-semibold text-sm flex items-center justify-center gap-2"
+          style={{ background: T.error, color: "#fff" }}>
+          <LogOut size={16} /> {t("logout")}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Add-to-list picker                                                  */
+/* ------------------------------------------------------------------ */
+const AddToListSheet = ({ myLists, onPick, onNewList, onClose }) => (
+  <div className="absolute inset-0 z-40 flex flex-col justify-end">
+    <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+    <div className="relative rounded-t-[28px] p-5 pb-8" style={{ background: T.surface }}>
+      <div className="mx-auto w-10 h-1 rounded-full mb-4" style={{ background: T.outlineVariant }} />
+      <h3 className="text-xl font-extrabold mb-4" style={{ color: T.onSurface }}>{t("addToAList")}</h3>
+      {myLists.length === 0 && (
+        <div className="text-sm mb-4" style={{ color: T.onSurfaceVariant }}>
+          {t("noListsYet")}
+        </div>
+      )}
+      {myLists.map((l) => (
+        <button key={l.id} onClick={() => onPick(l.id)}
+          className="w-full flex items-center gap-3 py-3 text-left border-b"
+          style={{ borderColor: T.outlineVariant }}>
+          <Avatar color={l.color} size={44} />
+          <span className="font-bold" style={{ color: T.onSurface }}>{l.title}</span>
+          <Plus size={18} color={T.onSurfaceVariant} className="ml-auto" />
+        </button>
+      ))}
+      <FilledButton className="w-full mt-4" onClick={onNewList}>{t("newList")}</FilledButton>
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* Bottom navigation + snackbar                                        */
+/* ------------------------------------------------------------------ */
+const NAV = [
+  { key: "map", label: "navMap", icon: Map },
+  { key: "people", label: "navPeople", icon: Users },
+  { key: "lists", label: "navLists", icon: ListChecks },
+  { key: "profile", label: "navProfile", icon: CircleUserRound },
+];
+
+const BottomNav = ({ tab, setTab }) => (
+  <div className="shrink-0 flex justify-around pt-2 pb-4 border-t"
+    style={{ background: T.surfaceContainer, borderColor: T.outlineVariant }}>
+    {NAV.map(({ key, label, icon: Icon }) => {
+      const active = tab === key;
+      return (
+        <button key={key} onClick={() => setTab(key)} className="flex flex-col items-center gap-1 w-20">
+          <span className="rounded-full px-5 py-1.5 transition-colors"
+            style={{ background: active ? T.secondaryContainer : "transparent" }}>
+            <Icon size={22} color={active ? T.onSecondaryContainer : T.onSurfaceVariant}
+              strokeWidth={active ? 2.4 : 1.8} />
+          </span>
+          <span className="text-xs font-semibold"
+            style={{ color: active ? T.onSurface : T.onSurfaceVariant }}>{t(label)}</span>
+        </button>
+      );
+    })}
+  </div>
+);
+
+const Snackbar = ({ msg }) =>
+  msg ? (
+    <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 rounded-full px-5 py-3 text-sm font-medium shadow-lg"
+      style={{ background: "#2C312B", color: "#fff" }}>
+      {msg}
+    </div>
+  ) : null;
+
+/* ------------------------------------------------------------------ */
+/* Splash                                                              */
+/* ------------------------------------------------------------------ */
+const Splash = ({ done }) => (
+  <div className="absolute inset-0 z-[60] flex items-center justify-center transition-opacity duration-500"
+    style={{ background: T.surface, opacity: done ? 0 : 1, pointerEvents: done ? "none" : "auto" }}>
+    <div className="flex flex-col items-center gap-2">
+      <div className="text-7xl font-extrabold leading-none"
+        style={{ color: T.primary, fontFamily: "'Cairo', 'Noto Sans Arabic', sans-serif" }}>
+        ذوق
+      </div>
+      <div className="text-xl font-bold uppercase" style={{ color: T.tertiary, letterSpacing: "0.4em", textIndent: "0.4em" }}>
+        Zawq
+      </div>
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* App shell                                                           */
+/* ------------------------------------------------------------------ */
+export default function App() {
+  const [splashDone, setSplashDone] = useState(false);
+  const [lang, setLang] = useState("en");
+  currentLang = lang;
+  const [tab, setTab] = useState("map");
+  const [query, setQuery] = useState("Fried chicken");
+  const [openedRestaurant, setOpenedRestaurant] = useState(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [openedList, setOpenedList] = useState(null);
+  const [creatingList, setCreatingList] = useState(false);
+  const [addingToList, setAddingToList] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [myLists, setMyLists] = useState([]);
+  const [reviews, setReviews] = useState({});
+  const [savedIds, setSavedIds] = useState(new Set());
+  const [snack, setSnack] = useState("");
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setSplashDone(true), 1100);
+    return () => clearTimeout(t);
+  }, []);
+  const toast = (m) => { setSnack(m); setTimeout(() => setSnack(""), 2200); };
+
+  const visited = Object.keys(reviews).length;
+
+  const submitReview = (rev) => {
+    setReviews({ ...reviews, [openedRestaurant.id]: rev });
+    setReviewing(false);
+    toast(t("toastReview", rev.rating.toFixed(1)));
+  };
+  const toggleSave = () => {
+    const n = new Set(savedIds);
+    if (n.has(openedRestaurant.id)) { n.delete(openedRestaurant.id); toast(t("toastUnsaved")); }
+    else { n.add(openedRestaurant.id); toast(t("toastSaved")); }
+    setSavedIds(n);
+  };
+  const createList = (name, desc) => {
+    const l = { id: `m${Date.now()}`, title: name, desc, by: "Islam Quandil",
+      handle: "islamqndl", color: T.primaryContainer, restaurantIds: [] };
+    setMyLists([l, ...myLists]);
+    setCreatingList(false);
+    toast(t("toastList", name));
+    return l.id;
+  };
+  const addRestaurantToList = (listId) => {
+    setMyLists(myLists.map((l) =>
+      l.id === listId && !l.restaurantIds.includes(openedRestaurant.id)
+        ? { ...l, restaurantIds: [...l.restaurantIds, openedRestaurant.id] } : l));
+    setAddingToList(false);
+    toast(t("toastAdded"));
+  };
+
+  return (
+    <div className="w-full h-screen flex items-center justify-center" style={{ background: "#DDD9CC" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        [dir='rtl'] .text-left { text-align: right; }
+        [dir='rtl'] .ml-auto { margin-left: unset; margin-right: auto; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .m3-slider { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 999px; outline: none; }
+        .m3-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+          width: 26px; height: 26px; border-radius: 50%; background: ${T.primary};
+          border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); cursor: pointer; }
+        .m3-slider::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
+          background: ${T.primary}; border: 3px solid #fff; cursor: pointer; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      `}</style>
+      {/* phone frame */}
+      <div dir={lang === "ar" ? "rtl" : "ltr"}
+        className="relative w-full max-w-md h-full overflow-hidden flex flex-col"
+        style={{ background: T.surface,
+          fontFamily: lang === "ar"
+            ? "'Cairo', 'Noto Sans Arabic', system-ui, sans-serif"
+            : "Roboto, system-ui, sans-serif" }}>
+        <div className="relative flex-1 overflow-hidden">
+          <button onClick={() => setLang(lang === "en" ? "ar" : "en")}
+            className="absolute top-2 left-1/2 -translate-x-1/2 z-[55] rounded-full px-4 py-1 text-xs font-bold shadow-md"
+            style={{ background: T.onSurface, color: "#fff" }}>
+            {lang === "en" ? "\u0627\u0644\u0639\u0631\u0628\u064a\u0629" : "English"}
+          </button>
+          {tab === "map" && (
+            <MapScreen openRestaurant={setOpenedRestaurant}
+              openFilters={() => setFiltersOpen(true)} query={query} setQuery={setQuery} />
+          )}
+          {tab === "people" && <PeopleScreen />}
+          {tab === "lists" && (
+            <ListsScreen myLists={myLists} openList={setOpenedList} openCreate={() => setCreatingList(true)} />
+          )}
+          {tab === "profile" && (
+            <ProfileScreen stats={{ visited, saved: savedIds.size }} myLists={myLists}
+              openSettings={() => setSettingsOpen(true)} openList={setOpenedList} />
+          )}
+
+          {openedList && (
+            <ListDetail list={myLists.find((l) => l.id === openedList.id) || openedList}
+              onClose={() => setOpenedList(null)}
+              openRestaurant={(r) => setOpenedRestaurant(r)} />
+          )}
+          {openedRestaurant && (
+            <RestaurantDetail r={openedRestaurant}
+              onClose={() => setOpenedRestaurant(null)}
+              onReview={() => setReviewing(true)}
+              onAddToList={() => setAddingToList(true)}
+              saved={savedIds.has(openedRestaurant.id)}
+              toggleSave={toggleSave}
+              myReview={reviews[openedRestaurant.id]} />
+          )}
+          {settingsOpen && (
+            <SettingsScreen onClose={() => setSettingsOpen(false)} reviewCount={visited} />
+          )}
+          {filtersOpen && <FiltersSheet onClose={() => setFiltersOpen(false)} />}
+          {reviewing && openedRestaurant && (
+            <ReviewSheet r={openedRestaurant} existing={reviews[openedRestaurant.id]}
+              onClose={() => setReviewing(false)} onSubmit={submitReview} />
+          )}
+          {creatingList && (
+            <CreateListSheet onClose={() => setCreatingList(false)} onCreate={createList} />
+          )}
+          {addingToList && openedRestaurant && (
+            <AddToListSheet myLists={myLists} onClose={() => setAddingToList(false)}
+              onPick={addRestaurantToList}
+              onNewList={() => { setAddingToList(false); setCreatingList(true); }} />
+          )}
+          <Snackbar msg={snack} />
+          <Splash done={splashDone} />
+        </div>
+        <BottomNav tab={tab} setTab={setTab} />
+      </div>
+    </div>
+  );
+}
